@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import shutil
 import sys
 from pathlib import Path
 from typing import Optional
@@ -105,6 +106,10 @@ def run(test_file: Path, output: Path, env_file: Optional[Path], env_id: str):
         sys.exit(1)
 
     env = next(e for e in env_data.environments if e.env_id == env_id)
+
+    # テストYAML を出力ディレクトリへコピー
+    output_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(test_file, output_dir / test_file.name)
 
     # テスト実行
     try:

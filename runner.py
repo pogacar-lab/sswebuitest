@@ -37,7 +37,7 @@ class TestRunner:
         self._logger = logger or get_logger()
 
     def run(self) -> list[TestResult]:
-        screenshot_dir = self._output_dir / self._env.env_id
+        screenshot_dir = self._output_dir / "screenshots"
         screenshot_dir.mkdir(parents=True, exist_ok=True)
 
         self._logger.info(
