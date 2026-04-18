@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import shutil
 import sys
 from pathlib import Path
 from typing import Optional
@@ -17,6 +18,7 @@ from validator import (
     SemanticValidationError,
 )
 from runner import TestRunner
+from reporter import generate_report
 from browser import BrowserStartError
 
 
@@ -105,6 +107,10 @@ def run(test_file: Path, output: Path, env_file: Optional[Path], env_id: str):
 
     env = next(e for e in env_data.environments if e.env_id == env_id)
 
+    # テストYAML を出力ディレクトリへコピー
+    output_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(test_file, output_dir / test_file.name)
+
     # テスト実行
     try:
         runner = TestRunner(scenario, env, output_dir, logger)
@@ -112,6 +118,18 @@ def run(test_file: Path, output: Path, env_file: Optional[Path], env_id: str):
     except BrowserStartError as e:
         logger.critical(str(e))
         sys.exit(1)
+
+    # HTML レポート生成
+    try:
+        report_path = generate_report(
+            output_dir=output_dir,
+            scenario_name=scenario.scenario_name,
+            env_id=env_id,
+            results=results,
+        )
+        logger.info(f"レポート出力: {report_path}")
+    except Exception as e:
+        logger.warning(f"レポート生成に失敗しました（テスト結果には影響しません）: {e}")
 
     failed = [r for r in results if not r.passed]
     sys.exit(1 if failed else 0)

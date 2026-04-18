@@ -58,18 +58,42 @@ class CheckAction(ActionBase):
     checked: bool
 
 
+class ScreenshotAction(ActionBase):
+    type: Literal["screenshot"]
+    timing: Optional[str] = None    # ファイル名サフィックス（例: initial, afterInput）
+    scroll: bool = False            # True: スクロール合成撮影
+
+
+class SwitchWindowAction(ActionBase):
+    type: Literal["switch_window"]
+    target: str                     # "new" または "new as <alias>"
+
+
+class CloseWindowAction(ActionBase):
+    type: Literal["close_window"]
+
+
 Action = Annotated[
-    Union[ClickAction, InputAction, SelectAction, CheckAction],
+    Union[
+        ClickAction,
+        InputAction,
+        SelectAction,
+        CheckAction,
+        ScreenshotAction,
+        SwitchWindowAction,
+        CloseWindowAction,
+    ],
     Field(discriminator="type"),
 ]
 
 
 class TestCase(BaseModel):
     name: str
-    entry_url: str
+    entry_url: Optional[str] = None         # 省略時は現在のウィンドウ状態を引き継ぐ
+    window: Optional[str] = None            # 実行前に切り替えるウィンドウの別名
     actions: list[Action] = Field(default_factory=list)
-    screenshot: bool = False
-    screenshot_scroll: bool = False
+    screenshot: bool = False                # 後方互換: アクション完了後に1枚撮影
+    screenshot_scroll: bool = False         # 後方互換: スクロール合成撮影
     wait: Optional[float] = None
 
 

@@ -112,10 +112,22 @@ def run_dry_run(
 
     log.info(f"  Test cases: {len(scenario.test_cases)}")
     for i, tc in enumerate(scenario.test_cases, 1):
+        ss_actions = [a for a in tc.actions if a.type == "screenshot"]
+        other_actions = [a for a in tc.actions if a.type != "screenshot"]
+        url_info = tc.entry_url if tc.entry_url else "(継続)"
+        window_info = f"  window={tc.window}" if tc.window else ""
+
+        if ss_actions:
+            ss_info = f"{len(ss_actions)} screenshots"
+        else:
+            ss_info = f"screenshot={tc.screenshot}  scroll={tc.screenshot_scroll}"
+
         log.info(
             f"    [{i:03d}] {tc.name:<30} "
-            f"{len(tc.actions)} actions  "
-            f"screenshot={tc.screenshot}  scroll={tc.screenshot_scroll}"
+            f"url={url_info}  "
+            f"{len(other_actions)} actions  "
+            f"{ss_info}"
+            f"{window_info}"
         )
 
     log.info("RESULT: PASSED")
