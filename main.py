@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -17,6 +18,7 @@ from validator import (
     SemanticValidationError,
 )
 from runner import TestRunner
+from reporter import generate_report
 from browser import BrowserStartError
 
 
@@ -106,12 +108,26 @@ def run(test_file: Path, output: Path, env_file: Optional[Path], env_id: str):
     env = next(e for e in env_data.environments if e.env_id == env_id)
 
     # テスト実行
+    run_start = datetime.now()
     try:
         runner = TestRunner(scenario, env, output_dir, logger)
         results = runner.run()
     except BrowserStartError as e:
         logger.critical(str(e))
         sys.exit(1)
+
+    # HTML レポート生成
+    try:
+        report_path = generate_report(
+            output_dir=output_dir,
+            scenario_name=scenario.scenario_name,
+            env_id=env_id,
+            results=results,
+            timestamp=run_start,
+        )
+        logger.info(f"レポート出力: {report_path}")
+    except Exception as e:
+        logger.warning(f"レポート生成に失敗しました（テスト結果には影響しません）: {e}")
 
     failed = [r for r in results if not r.passed]
     sys.exit(1 if failed else 0)
