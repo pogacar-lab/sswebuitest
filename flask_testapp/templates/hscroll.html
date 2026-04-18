@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}横スクロールテーブル - WebuiTest App{% endblock %}
+
+{% block extra_style %}
+<style>
+  .hscroll-wrap {
+    overflow-x: auto;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.1);
+  }
+  .hscroll-table {
+    border-collapse: collapse;
+    font-size: .82rem;
+    white-space: nowrap;
+    background: #fff;
+  }
+  .hscroll-table thead tr {
+    background: #2c3e50;
+    color: #fff;
+    position: sticky;
+    top: 52px;
+  }
+  .hscroll-table th {
+    padding: 10px 16px;
+    text-align: left;
+    font-weight: 600;
+    border-right: 1px solid #3d5166;
+  }
+  .hscroll-table th:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: #2c3e50;
+  }
+  .hscroll-table tbody tr:nth-child(even) { background: #f8f9fa; }
+  .hscroll-table tbody tr:hover { background: #eaf4ff; }
+  .hscroll-table td {
+    padding: 8px 16px;
+    border-bottom: 1px solid #e9ecef;
+    border-right: 1px solid #e9ecef;
+  }
+  .hscroll-table td:first-child {
+    position: sticky;
+    left: 0;
+    background: inherit;
+    z-index: 1;
+    font-family: monospace;
+    font-weight: 600;
+    border-right: 2px solid #ccc;
+  }
+  .hscroll-table tbody tr:nth-child(even) td:first-child { background: #f8f9fa; }
+  .hscroll-table tbody tr:hover td:first-child { background: #eaf4ff; }
+
+  .progress-bar-wrap {
+    width: 80px;
+    height: 10px;
+    background: #e9ecef;
+    border-radius: 5px;
+    overflow: hidden;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 4px;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: #3498db;
+    border-radius: 5px;
+  }
+  .diff-pos { color: #27ae60; font-weight: 600; }
+  .diff-neg { color: #e74c3c; font-weight: 600; }
+  .pri-高 { background:#f8d7da; color:#721c24; padding:2px 7px; border-radius:10px; font-size:.75rem; font-weight:600; }
+  .pri-中 { background:#fff3cd; color:#856404; padding:2px 7px; border-radius:10px; font-size:.75rem; font-weight:600; }
+  .pri-低 { background:#d4edda; color:#155724; padding:2px 7px; border-radius:10px; font-size:.75rem; font-weight:600; }
+
+  .scroll-hint {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #888;
+    font-size: .85rem;
+    margin-bottom: 12px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>横スクロールテーブル</h1>
+<p style="color:#666;margin-bottom:12px;">{{ rows|length }} 件 × {{ columns|length }} 列の横長テーブルです。左端のID列は固定されています。</p>
+
+<div class="scroll-hint" id="scroll-hint">
+  <span>←</span> 横にスクロールして全カラムを確認できます <span>→</span>
+</div>
+
+<div class="hscroll-wrap" id="hscroll-wrap">
+  <table class="hscroll-table" id="hscroll-table">
+    <thead>
+      <tr>
+        {% for col in columns %}
+        <th>{{ col }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr id="hrow-{{ loop.index }}">
+        <td>{{ row.id }}</td>
+        <td>{{ row.date }}</td>
+        <td>{{ row.owner }}</td>
+        <td>{{ row.dept }}</td>
+        <td>{{ row.project }}</td>
+        <td>{{ row.task }}</td>
+        <td><span class="pri-{{ row.priority }}">{{ row.priority }}</span></td>
+        <td>{{ row.start }}</td>
+        <td>{{ row.end }}</td>
+        <td>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" style="width:{{ row.progress }}%"></div>
+          </div>{{ row.progress }}%
+        </td>
+        <td style="text-align:right;">{{ row.budget }}</td>
+        <td style="text-align:right;">{{ row.actual }}</td>
+        <td style="text-align:right;" class="{{ 'diff-pos' if row.diff >= 0 else 'diff-neg' }}">
+          {{ '+' if row.diff >= 0 else '' }}{{ row.diff }}
+        </td>
+        <td style="text-align:right;">{{ row.hours }}</td>
+        <td style="text-align:right;">{{ row.remaining }}</td>
+        <td style="text-align:right;">{{ row.quality }}</td>
+        <td>{{ row.reviewer }}</td>
+        <td>{{ row.approver }}</td>
+        <td style="font-family:monospace;">{{ row.ticket }}</td>
+        <td>{{ row.updated }}</td>
+        <td style="color:#888;">{{ row.comment }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

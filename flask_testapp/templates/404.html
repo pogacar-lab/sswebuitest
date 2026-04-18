@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}404 Not Found - WebuiTest App{% endblock %}
+
+{% block extra_style %}
+<style>
+  .error-container {
+    text-align: center;
+    padding: 60px 20px;
+  }
+  .error-code {
+    font-size: 8rem;
+    font-weight: 900;
+    color: #e74c3c;
+    line-height: 1;
+    letter-spacing: -4px;
+  }
+  .error-title {
+    font-size: 1.6rem;
+    color: #2c3e50;
+    margin: 16px 0 8px;
+  }
+  .error-desc {
+    color: #888;
+    font-size: 1rem;
+    margin-bottom: 32px;
+  }
+  .error-path {
+    display: inline-block;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 4px 12px;
+    font-family: monospace;
+    font-size: .9rem;
+    color: #e74c3c;
+    margin-bottom: 32px;
+  }
+  .back-links { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="error-container">
+  <div class="error-code" id="error-code">404</div>
+  <div class="error-title" id="error-title">ページが見つかりません</div>
+  <div class="error-desc" id="error-desc">
+    お探しのページは存在しないか、移動・削除された可能性があります。
+  </div>
+  <div class="error-path" id="error-path">{{ request.path }}</div>
+
+  <div class="back-links">
+    <a href="/" class="btn btn-primary" id="btn-home">トップへ戻る</a>
+    <a href="/form" class="btn btn-secondary" id="btn-form">フォームページ</a>
+    <a href="/table" class="btn btn-secondary" id="btn-table">テーブルページ</a>
+  </div>
+</div>
+
+<div class="card" style="border-left:4px solid #e74c3c;max-width:500px;margin:0 auto;">
+  <h2>テスト用セレクタ一覧</h2>
+  <table style="width:100%;border-collapse:collapse;font-size:.85rem;font-family:monospace;">
+    <tr style="background:#f0f2f5;"><th style="padding:7px 12px;text-align:left;">要素</th><th style="padding:7px 12px;text-align:left;">ID</th></tr>
+    <tr><td style="padding:7px 12px;border-bottom:1px solid #eee;">エラーコード</td><td style="padding:7px 12px;border-bottom:1px solid #eee;">#error-code</td></tr>
+    <tr><td style="padding:7px 12px;border-bottom:1px solid #eee;">エラータイトル</td><td style="padding:7px 12px;border-bottom:1px solid #eee;">#error-title</td></tr>
+    <tr><td style="padding:7px 12px;border-bottom:1px solid #eee;">リクエストパス</td><td style="padding:7px 12px;border-bottom:1px solid #eee;">#error-path</td></tr>
+    <tr><td style="padding:7px 12px;">トップへ戻るボタン</td><td style="padding:7px 12px;">#btn-home</td></tr>
+  </table>
+</div>
+{% endblock %}

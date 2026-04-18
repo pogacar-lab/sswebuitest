@@ -1,0 +1,36 @@
+environments:
+  - env_no: 1
+    browser: chrome
+    window_width: 1440
+    window_height: 900
+    options:
+      headless: false
+      zoom: 1.0
+      compatibility_mode: false
+
+  - env_no: 2
+    browser: chrome
+    window_width: 1280
+    window_height: 800
+    options:
+      headless: true
+      zoom: 1.0
+      compatibility_mode: false
+
+  - env_no: 3
+    browser: firefox
+    window_width: 1280
+    window_height: 800
+    options:
+      headless: false
+      zoom: 1.0
+      compatibility_mode: false
+
+  - env_no: 4
+    browser: edge
+    window_width: 1440
+    window_height: 900
+    options:
+      headless: false
+      zoom: 1.25
+      compatibility_mode: true

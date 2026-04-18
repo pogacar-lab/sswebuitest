@@ -1,0 +1,55 @@
+# このファイルは架空の example.com を対象とした記述サンプルです。
+# 実際のテストには entry_url・selector・value を対象アプリに合わせて書き換えてください。
+# パスワード等の value は実在する認証情報ではありません。
+app_name: "サンプルアプリ"
+description: "ログイン・ダッシュボードのスモークテスト"
+scenario_name: "login_smoke"
+continue_on_error: false
+env_no: 1
+
+test_cases:
+  - name: ログインページ表示
+    entry_url: "https://example.com/login"
+    screenshot: true
+    screenshot_scroll: false
+    wait: 1.0
+    actions:
+      - type: input
+        selector: "#username"
+        value: "testuser"
+        wait: 0.3
+      - type: input
+        selector: "#password"
+        value: "password123"
+        wait: 0.3
+      - type: click
+        selector: "button[type='submit']"
+        wait: 1.0
+
+  - name: ダッシュボード確認
+    entry_url: "https://example.com/dashboard"
+    screenshot: true
+    screenshot_scroll: true
+    wait: 0.5
+    actions:
+      - type: select
+        selector: "#period-dropdown"
+        value: "Last 30 days"
+        wait: 0.5
+      - type: check
+        selector: "#notify-checkbox"
+        checked: true
+
+  - name: 設定ページ
+    entry_url: "https://example.com/settings"
+    screenshot: true
+    screenshot_scroll: false
+    actions:
+      - type: click
+        selector: "//button[contains(text(), '編集')]"
+        wait: 0.5
+      - type: input
+        selector: "//input[@name='display_name']"
+        value: "テストユーザー"
+      - type: click
+        selector: "//button[@type='submit']"

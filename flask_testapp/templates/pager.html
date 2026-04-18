@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}ページャ ({{ page }}/{{ total_pages }}) - WebuiTest App{% endblock %}
+
+{% block extra_style %}
+<style>
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .875rem;
+  }
+  .data-table thead tr {
+    background: #2c3e50;
+    color: #fff;
+  }
+  .data-table th {
+    padding: 11px 14px;
+    text-align: left;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .data-table tbody tr:nth-child(even) { background: #f8f9fa; }
+  .data-table tbody tr:hover { background: #eaf4ff; }
+  .data-table td {
+    padding: 9px 14px;
+    border-bottom: 1px solid #e9ecef;
+    white-space: nowrap;
+  }
+  .status-完了     { background:#d4edda; color:#155724; }
+  .status-処理中   { background:#cce5ff; color:#004085; }
+  .status-待機中   { background:#fff3cd; color:#856404; }
+  .status-エラー   { background:#f8d7da; color:#721c24; }
+  .status-キャンセル { background:#e2e3e5; color:#383d41; }
+
+  /* ページャ */
+  .pager {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+  }
+  .pager a, .pager span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    border-radius: 5px;
+    font-size: .9rem;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid #dee2e6;
+    background: #fff;
+    color: #3498db;
+    transition: background .12s, color .12s;
+  }
+  .pager a:hover { background: #3498db; color: #fff; border-color: #3498db; }
+  .pager span.current { background: #3498db; color: #fff; border-color: #3498db; }
+  .pager span.disabled { color: #aaa; pointer-events: none; }
+  .pager .ellipsis { border: none; background: none; color: #aaa; }
+
+  .page-info {
+    color: #666;
+    font-size: .88rem;
+    margin-left: auto;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>ページャ付きテーブル</h1>
+<p style="color:#666;margin-bottom:20px;">
+  全 {{ total }} 件 / {{ per_page }} 件ずつ表示 &mdash;
+  <span id="page-info">{{ page }} / {{ total_pages }} ページ</span>
+</p>
+
+<div class="card" style="padding:0;overflow:hidden;">
+  <table class="data-table" id="pager-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>トランザクションID</th>
+        <th>日付</th>
+        <th>カテゴリ</th>
+        <th>顧客</th>
+        <th>金額</th>
+        <th>ステータス</th>
+        <th>備考</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr id="prow-{{ loop.index }}">
+        <td style="color:#aaa;font-size:.8rem;">{{ (page - 1) * per_page + loop.index }}</td>
+        <td style="font-family:monospace;font-size:.82rem;">{{ row.id }}</td>
+        <td>{{ row.date }}</td>
+        <td>{{ row.category }}</td>
+        <td>{{ row.customer }}</td>
+        <td style="text-align:right;font-variant-numeric:tabular-nums;">{{ row.amount }}</td>
+        <td><span class="badge status-{{ row.status }}">{{ row.status }}</span></td>
+        <td style="color:#888;">{{ row.note }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<nav class="pager" id="pager" aria-label="ページナビゲーション">
+  {# 前へ #}
+  {% if page > 1 %}
+  <a href="/pager?page=1" id="pager-first" title="先頭">«</a>
+  <a href="/pager?page={{ page - 1 }}" id="pager-prev" title="前へ">‹</a>
+  {% else %}
+  <span class="disabled">«</span>
+  <span class="disabled">‹</span>
+  {% endif %}
+
+  {# ページ番号 #}
+  {% set win = 2 %}
+  {% for p in range(1, total_pages + 1) %}
+    {% if p == 1 or p == total_pages or (p >= page - win and p <= page + win) %}
+      {% if loop.index > 1 and p > (range(1, total_pages + 1)|list)[loop.index0 - 1] + 1 %}
+        <span class="ellipsis">…</span>
+      {% endif %}
+      {% if p == page %}
+        <span class="current" id="pager-current">{{ p }}</span>
+      {% else %}
+        <a href="/pager?page={{ p }}" id="pager-p{{ p }}">{{ p }}</a>
+      {% endif %}
+    {% endif %}
+  {% endfor %}
+
+  {# 次へ #}
+  {% if page < total_pages %}
+  <a href="/pager?page={{ page + 1 }}" id="pager-next" title="次へ">›</a>
+  <a href="/pager?page={{ total_pages }}" id="pager-last" title="末尾">»</a>
+  {% else %}
+  <span class="disabled">›</span>
+  <span class="disabled">»</span>
+  {% endif %}
+
+  <span class="page-info">{{ page }} / {{ total_pages }} ページ</span>
+</nav>
+{% endblock %}

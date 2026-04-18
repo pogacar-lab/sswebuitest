@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}縦長テーブル - WebuiTest App{% endblock %}
+
+{% block extra_style %}
+<style>
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .875rem;
+  }
+  .data-table thead tr {
+    background: #2c3e50;
+    color: #fff;
+    position: sticky;
+    top: 52px;
+  }
+  .data-table th {
+    padding: 11px 14px;
+    text-align: left;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .data-table tbody tr:nth-child(even) { background: #f8f9fa; }
+  .data-table tbody tr:hover { background: #eaf4ff; }
+  .data-table td {
+    padding: 9px 14px;
+    border-bottom: 1px solid #e9ecef;
+    white-space: nowrap;
+  }
+  .data-table td.note { white-space: normal; max-width: 200px; color: #666; }
+
+  .status-完了     { background:#d4edda; color:#155724; }
+  .status-処理中   { background:#cce5ff; color:#004085; }
+  .status-待機中   { background:#fff3cd; color:#856404; }
+  .status-エラー   { background:#f8d7da; color:#721c24; }
+  .status-キャンセル { background:#e2e3e5; color:#383d41; }
+
+  .summary {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .summary-item {
+    background: #fff;
+    border-radius: 8px;
+    padding: 12px 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.1);
+    text-align: center;
+    min-width: 110px;
+  }
+  .summary-item .num { font-size: 1.6rem; font-weight: 700; color: #2c3e50; }
+  .summary-item .lbl { font-size: .78rem; color: #888; margin-top: 2px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>縦長テーブル</h1>
+<p style="color:#666;margin-bottom:20px;">スクロールスクリーンショットのテスト用に {{ total }} 件のデータを表示しています。</p>
+
+<div class="summary">
+  <div class="summary-item"><div class="num" id="total-count">{{ total }}</div><div class="lbl">総件数</div></div>
+  <div class="summary-item"><div class="num" style="color:#27ae60;" id="done-count">{{ rows | selectattr("status","equalto","完了") | list | length }}</div><div class="lbl">完了</div></div>
+  <div class="summary-item"><div class="num" style="color:#3498db;" id="processing-count">{{ rows | selectattr("status","equalto","処理中") | list | length }}</div><div class="lbl">処理中</div></div>
+  <div class="summary-item"><div class="num" style="color:#f39c12;" id="waiting-count">{{ rows | selectattr("status","equalto","待機中") | list | length }}</div><div class="lbl">待機中</div></div>
+  <div class="summary-item"><div class="num" style="color:#e74c3c;" id="error-count">{{ rows | selectattr("status","equalto","エラー") | list | length }}</div><div class="lbl">エラー</div></div>
+  <div class="summary-item"><div class="num" style="color:#95a5a6;" id="cancel-count">{{ rows | selectattr("status","equalto","キャンセル") | list | length }}</div><div class="lbl">キャンセル</div></div>
+</div>
+
+<div class="card" style="padding:0;overflow:hidden;">
+  <table class="data-table" id="data-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>トランザクションID</th>
+        <th>日付</th>
+        <th>カテゴリ</th>
+        <th>顧客</th>
+        <th>金額</th>
+        <th>ステータス</th>
+        <th>備考</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr id="row-{{ loop.index }}">
+        <td style="color:#aaa;font-size:.8rem;">{{ loop.index }}</td>
+        <td style="font-family:monospace;font-size:.82rem;">{{ row.id }}</td>
+        <td>{{ row.date }}</td>
+        <td>{{ row.category }}</td>
+        <td>{{ row.customer }}</td>
+        <td style="text-align:right;font-variant-numeric:tabular-nums;">{{ row.amount }}</td>
+        <td>
+          <span class="badge status-{{ row.status }}">{{ row.status }}</span>
+        </td>
+        <td class="note">{{ row.note }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

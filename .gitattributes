@@ -1,0 +1,6 @@
+# テキストファイルの改行コードをリポジトリ内では LF に統一する
+* text=auto eol=lf
+
+# Windows バッチファイルは CRLF を維持する
+*.cmd text eol=crlf
+*.bat text eol=crlf

@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block title %}フォームページ - WebuiTest App{% endblock %}
+
+{% block extra_style %}
+<style>
+  .form-group { margin-bottom: 18px; }
+  .form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+    font-size: .9rem;
+    color: #444;
+  }
+  .form-group input[type="text"],
+  .form-group input[type="email"],
+  .form-group input[type="password"],
+  .form-group input[type="date"],
+  .form-group input[type="number"],
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: .95rem;
+    transition: border-color .15s;
+  }
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52,152,219,.15);
+  }
+  .form-group textarea { resize: vertical; min-height: 90px; }
+  .checkbox-group { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 6px; }
+  .checkbox-group label {
+    font-weight: normal;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+  .radio-group { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 6px; }
+  .radio-group label {
+    font-weight: normal;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+  .required { color: #e74c3c; margin-left: 2px; }
+  .form-section { border-top: 1px solid #eee; padding-top: 18px; margin-top: 18px; }
+  .result-table { width:100%; border-collapse:collapse; font-size:.9rem; }
+  .result-table td { padding:7px 12px; border-bottom:1px solid #eee; }
+  .result-table td:first-child { font-weight:600; color:#555; width:160px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>フォームページ</h1>
+
+{% if submitted %}
+<div class="card" style="border-left:4px solid #2ecc71;">
+  <h2 style="color:#27ae60;margin-bottom:12px;">✅ 送信完了</h2>
+  <table class="result-table">
+    <tr><td>ユーザー名</td><td id="result-username">{{ data.username }}</td></tr>
+    <tr><td>メールアドレス</td><td id="result-email">{{ data.email }}</td></tr>
+    <tr><td>年齢</td><td id="result-age">{{ data.age }}</td></tr>
+    <tr><td>生年月日</td><td id="result-birth">{{ data.birth_date }}</td></tr>
+    <tr><td>国・地域</td><td id="result-country">{{ data.country }}</td></tr>
+    <tr><td>プラン</td><td id="result-plan">{{ data.plan }}</td></tr>
+    <tr><td>興味カテゴリ</td><td id="result-interests">{{ data.interests | join(", ") if data.interests else "なし" }}</td></tr>
+    <tr><td>満足度スコア</td><td id="result-score">{{ data.score }}</td></tr>
+    <tr><td>メルマガ購読</td><td id="result-newsletter">{{ "はい" if data.newsletter else "いいえ" }}</td></tr>
+    <tr><td>規約同意</td><td id="result-agree">{{ "同意済み" if data.agree else "未同意" }}</td></tr>
+    <tr><td>メッセージ</td><td id="result-message" style="white-space:pre-wrap">{{ data.message }}</td></tr>
+  </table>
+  <div style="margin-top:16px;">
+    <a href="/form" class="btn btn-secondary" id="btn-back-form">フォームに戻る</a>
+  </div>
+</div>
+{% else %}
+<div class="card">
+  <form method="POST" action="/form" id="main-form">
+
+    <div class="form-section" style="border-top:none;padding-top:0;margin-top:0;">
+      <h2>基本情報</h2>
+
+      <div class="form-group">
+        <label for="username">ユーザー名 <span class="required">*</span></label>
+        <input type="text" id="username" name="username" placeholder="例: yamada_taro" required>
+      </div>
+
+      <div class="form-group">
+        <label for="email">メールアドレス <span class="required">*</span></label>
+        <input type="email" id="email" name="email" placeholder="例: taro@example.com" required>
+      </div>
+
+      <div class="form-group">
+        <label for="password">パスワード <span class="required">*</span></label>
+        <input type="password" id="password" name="password" placeholder="8文字以上" required>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="form-group">
+          <label for="age">年齢</label>
+          <input type="number" id="age" name="age" min="0" max="150" placeholder="例: 30">
+        </div>
+        <div class="form-group">
+          <label for="birth_date">生年月日</label>
+          <input type="date" id="birth_date" name="birth_date">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h2>地域・プラン</h2>
+
+      <div class="form-group">
+        <label for="country">国・地域</label>
+        <select id="country" name="country">
+          <option value="">-- 選択してください --</option>
+          <option value="jp">日本</option>
+          <option value="us">アメリカ</option>
+          <option value="uk">イギリス</option>
+          <option value="de">ドイツ</option>
+          <option value="fr">フランス</option>
+          <option value="cn">中国</option>
+          <option value="kr">韓国</option>
+          <option value="au">オーストラリア</option>
+          <option value="other">その他</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>プラン <span class="required">*</span></label>
+        <div class="radio-group" id="plan-group">
+          <label><input type="radio" name="plan" id="plan-free" value="free"> 無料プラン</label>
+          <label><input type="radio" name="plan" id="plan-basic" value="basic"> ベーシック (¥980/月)</label>
+          <label><input type="radio" name="plan" id="plan-pro" value="pro"> プロ (¥2,980/月)</label>
+          <label><input type="radio" name="plan" id="plan-enterprise" value="enterprise"> エンタープライズ</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h2>興味・関心</h2>
+
+      <div class="form-group">
+        <label>興味のあるカテゴリ（複数選択可）</label>
+        <div class="checkbox-group" id="interests-group">
+          <label><input type="checkbox" name="interests" id="interest-tech" value="テクノロジー"> テクノロジー</label>
+          <label><input type="checkbox" name="interests" id="interest-business" value="ビジネス"> ビジネス</label>
+          <label><input type="checkbox" name="interests" id="interest-design" value="デザイン"> デザイン</label>
+          <label><input type="checkbox" name="interests" id="interest-marketing" value="マーケティング"> マーケティング</label>
+          <label><input type="checkbox" name="interests" id="interest-finance" value="ファイナンス"> ファイナンス</label>
+          <label><input type="checkbox" name="interests" id="interest-health" value="ヘルス"> ヘルス・医療</label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="score">総合満足度 (0〜10)</label>
+        <input type="number" id="score" name="score" min="0" max="10" placeholder="例: 8">
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h2>メッセージ・オプション</h2>
+
+      <div class="form-group">
+        <label for="message">お問い合わせ内容</label>
+        <textarea id="message" name="message" placeholder="ご自由にどうぞ..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <div class="checkbox-group">
+          <label>
+            <input type="checkbox" id="newsletter" name="newsletter">
+            メールマガジンを購読する
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <div class="checkbox-group">
+          <label>
+            <input type="checkbox" id="agree" name="agree" required>
+            <span>利用規約およびプライバシーポリシーに同意する <span class="required">*</span></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:24px;display:flex;gap:12px;">
+      <button type="submit" class="btn btn-primary" id="btn-submit">送信する</button>
+      <button type="reset" class="btn btn-secondary" id="btn-reset">リセット</button>
+    </div>
+
+  </form>
+</div>
+{% endif %}
+{% endblock %}

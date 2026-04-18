@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}WebuiTest サンプルアプリ{% endblock %}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Segoe UI", "Hiragino Sans", sans-serif;
+      background: #f5f7fa;
+      color: #333;
+      min-height: 100vh;
+    }
+
+    nav {
+      background: #2c3e50;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      height: 52px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 6px rgba(0,0,0,.3);
+    }
+    nav .brand {
+      color: #fff;
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin-right: 16px;
+      text-decoration: none;
+    }
+    nav a {
+      color: #bdc3cb;
+      text-decoration: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: .9rem;
+      transition: background .15s;
+    }
+    nav a:hover, nav a.active { background: #3d5166; color: #fff; }
+
+    .container {
+      max-width: 1100px;
+      margin: 32px auto;
+      padding: 0 20px;
+    }
+
+    h1 { font-size: 1.6rem; margin-bottom: 16px; color: #2c3e50; }
+    h2 { font-size: 1.2rem; margin-bottom: 12px; color: #34495e; }
+
+    .card {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.1);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: .75rem;
+      font-weight: 600;
+    }
+    .badge-green  { background: #d4edda; color: #155724; }
+    .badge-blue   { background: #cce5ff; color: #004085; }
+    .badge-yellow { background: #fff3cd; color: #856404; }
+    .badge-red    { background: #f8d7da; color: #721c24; }
+    .badge-gray   { background: #e2e3e5; color: #383d41; }
+
+    .btn {
+      display: inline-block;
+      padding: 8px 20px;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+      font-size: .95rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: opacity .15s;
+    }
+    .btn:hover { opacity: .85; }
+    .btn-primary { background: #3498db; color: #fff; }
+    .btn-danger  { background: #e74c3c; color: #fff; }
+    .btn-secondary { background: #95a5a6; color: #fff; }
+  </style>
+  {% block extra_style %}{% endblock %}
+</head>
+<body>
+  <nav>
+    <a href="/" class="brand">WebuiTest App</a>
+    <a href="/" {% if request.path == '/' %}class="active"{% endif %}>トップ</a>
+    <a href="/form" {% if request.path == '/form' %}class="active"{% endif %}>フォーム</a>
+    <a href="/table" {% if request.path == '/table' %}class="active"{% endif %}>テーブル</a>
+    <a href="/slow" {% if request.path == '/slow' %}class="active"{% endif %}>低速ページ</a>
+    <a href="/hscroll" {% if request.path == '/hscroll' %}class="active"{% endif %}>横スクロール</a>
+    <a href="/pager" {% if request.path == '/pager' %}class="active"{% endif %}>ページャ</a>
+    <a href="/ajax-table" {% if request.path == '/ajax-table' %}class="active"{% endif %}>非同期テーブル</a>
+    <a href="/not-found">404ページ</a>
+  </nav>
+  <div class="container">
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>

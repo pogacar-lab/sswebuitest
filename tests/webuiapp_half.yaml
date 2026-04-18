@@ -1,0 +1,116 @@
+app_name: "WebuiTest サンプルアプリ"
+description: "全ページ機能テスト - Chrome 960×1080 縦長（Winキー＋右矢印）"
+scenario_name: "webuiapp_half"
+continue_on_error: true
+env_no: 2
+
+test_cases:
+
+  # ── 1. トップページ ──────────────────────────────────────────
+  - name: top_page
+    entry_url: "http://localhost:5000/"
+    screenshot: true
+    screenshot_scroll: false
+
+  # ── 2. フォーム入力・送信 ────────────────────────────────────
+  - name: form_submit
+    entry_url: "http://localhost:5000/form"
+    screenshot: true
+    screenshot_scroll: false
+    wait: 0.5
+    actions:
+      - type: input
+        selector: "#username"
+        value: "テストユーザー"
+      - type: input
+        selector: "#email"
+        value: "test@example.com"
+      - type: input
+        selector: "#password"
+        value: "TestPassword123"
+      - type: input
+        selector: "#age"
+        value: "25"
+      - type: select
+        selector: "#country"
+        value: "jp"
+        wait: 0.3
+      - type: click
+        selector: "#plan-pro"
+        wait: 0.2
+      - type: check
+        selector: "#interest-tech"
+        checked: true
+      - type: check
+        selector: "#interest-business"
+        checked: true
+      - type: check
+        selector: "#newsletter"
+        checked: true
+      - type: check
+        selector: "#agree"
+        checked: true
+        wait: 0.2
+      - type: click
+        selector: "#btn-submit"
+        wait: 1.0
+
+  # ── 3. 縦長テーブル（スクロール撮影） ───────────────────────
+  - name: table_scroll
+    entry_url: "http://localhost:5000/table"
+    screenshot: true
+    screenshot_scroll: true
+
+  # ── 4. 低速ページ（3秒遅延） ─────────────────────────────────
+  - name: slow_3sec
+    entry_url: "http://localhost:5000/slow?delay=3"
+    screenshot: true
+    screenshot_scroll: false
+
+  # ── 5. 横スクロールテーブル ──────────────────────────────────
+  #    960px幅では横スクロールが顕著に発生する
+  - name: hscroll_table
+    entry_url: "http://localhost:5000/hscroll"
+    screenshot: true
+    screenshot_scroll: false
+
+  # ── 6. ページャ 1ページ目確認 ────────────────────────────────
+  - name: pager_page1
+    entry_url: "http://localhost:5000/pager"
+    screenshot: true
+    screenshot_scroll: false
+
+  # ── 7. ページャ ページ遷移操作 ───────────────────────────────
+  - name: pager_navigation
+    entry_url: "http://localhost:5000/pager"
+    screenshot: true
+    screenshot_scroll: false
+    actions:
+      - type: click
+        selector: "#pager-p3"
+        wait: 0.5
+      - type: click
+        selector: "#pager-next"
+        wait: 0.5
+      - type: click
+        selector: "#pager-prev"
+        wait: 0.5
+      - type: click
+        selector: "#pager-last"
+        wait: 0.5
+
+  # ── 8. 非同期テーブル（3秒遅延） ────────────────────────────
+  - name: ajax_table_3sec
+    entry_url: "http://localhost:5000/ajax-table?delay=3"
+    screenshot: true
+    screenshot_scroll: false
+    actions:
+      - type: click
+        selector: "#arow-1"
+        wait: 0.5
+
+  # ── 9. 404 エラーページ ──────────────────────────────────────
+  - name: error_404
+    entry_url: "http://localhost:5000/not-found"
+    screenshot: true
+    screenshot_scroll: false

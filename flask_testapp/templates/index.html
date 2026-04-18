@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}トップページ - WebuiTest App{% endblock %}
+
+{% block content %}
+<h1>WebuiTest サンプルアプリ</h1>
+<p style="color:#666;margin-bottom:24px;">Selenium テストツールの動作検証用アプリです。各ページでテストシナリオを試せます。</p>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;">
+
+  <div class="card">
+    <h2>📋 フォームページ</h2>
+    <p style="color:#666;font-size:.9rem;margin-bottom:16px;">テキスト入力・プルダウン・チェックボックスなど一式のフォームを含むページです。</p>
+    <a href="/form" class="btn btn-primary" id="btn-to-form">フォームを開く</a>
+  </div>
+
+  <div class="card">
+    <h2>📊 縦長テーブルページ</h2>
+    <p style="color:#666;font-size:.9rem;margin-bottom:16px;">200行のデータテーブルを表示します。スクロールスクリーンショットの検証に使えます。</p>
+    <a href="/table" class="btn btn-primary" id="btn-to-table">テーブルを開く</a>
+  </div>
+
+  <div class="card">
+    <h2>⏳ 低速レスポンスページ</h2>
+    <p style="color:#666;font-size:.9rem;margin-bottom:16px;">指定秒数（デフォルト5秒）だけ応答を遅延させます。タイムアウト検証に使えます。</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <a href="/slow?delay=3" class="btn btn-secondary" id="btn-slow-3">3秒遅延</a>
+      <a href="/slow?delay=5" class="btn btn-secondary" id="btn-slow-5">5秒遅延</a>
+      <a href="/slow?delay=10" class="btn btn-secondary" id="btn-slow-10">10秒遅延</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>↔️ 横スクロールページ</h2>
+    <p style="color:#666;font-size:.9rem;margin-bottom:16px;">21列の横長テーブルです。左端ID列は固定。横スクロールの検証に使えます。</p>
+    <a href="/hscroll" class="btn btn-primary" id="btn-to-hscroll">横スクロールを開く</a>
+  </div>
+
+  <div class="card">
+    <h2>📄 ページャ付きページ</h2>
+    <p style="color:#666;font-size:.9rem;margin-bottom:16px;">100件を10件ずつ表示するページネーション付きテーブルです。ページ遷移の検証に使えます。</p>
+    <a href="/pager" class="btn btn-primary" id="btn-to-pager">ページャを開く</a>
+  </div>
+
+  <div class="card">
+    <h2>⚡ 非同期テーブルページ</h2>
+    <p style="color:#666;font-size:.9rem;margin-bottom:16px;">JavaScript の fetch() でテーブルを動的取得します。取得完了まで待機が必要な非同期要素の検証に使えます。</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <a href="/ajax-table?delay=2"  class="btn btn-primary" id="btn-ajax-2">2秒遅延</a>
+      <a href="/ajax-table?delay=5"  class="btn btn-primary" id="btn-ajax-5">5秒遅延</a>
+      <a href="/ajax-table?delay=10" class="btn btn-secondary" id="btn-ajax-10">10秒遅延</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🚫 404ページ</h2>
+    <p style="color:#666;font-size:.9rem;margin-bottom:16px;">意図的に404エラーを返すページです。エラーハンドリングの検証に使えます。</p>
+    <a href="/not-found" class="btn btn-danger" id="btn-to-404">404を表示</a>
+  </div>
+
+</div>
+
+<div class="card" style="margin-top:8px;">
+  <h2>ステータス確認</h2>
+  <table style="border-collapse:collapse;width:100%;font-size:.9rem;">
+    <thead>
+      <tr style="background:#f0f2f5;">
+        <th style="padding:8px 12px;text-align:left;border-bottom:2px solid #ddd;">ページ</th>
+        <th style="padding:8px 12px;text-align:left;border-bottom:2px solid #ddd;">URL</th>
+        <th style="padding:8px 12px;text-align:left;border-bottom:2px solid #ddd;">特徴</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:8px 12px;border-bottom:1px solid #eee;">トップ</td><td style="padding:8px 12px;border-bottom:1px solid #eee;font-family:monospace;">/</td><td style="padding:8px 12px;border-bottom:1px solid #eee;"><span class="badge badge-green">正常</span></td></tr>
+      <tr><td style="padding:8px 12px;border-bottom:1px solid #eee;">フォーム</td><td style="padding:8px 12px;border-bottom:1px solid #eee;font-family:monospace;">/form</td><td style="padding:8px 12px;border-bottom:1px solid #eee;"><span class="badge badge-blue">フォーム送信</span></td></tr>
+      <tr><td style="padding:8px 12px;border-bottom:1px solid #eee;">テーブル</td><td style="padding:8px 12px;border-bottom:1px solid #eee;font-family:monospace;">/table</td><td style="padding:8px 12px;border-bottom:1px solid #eee;"><span class="badge badge-blue">縦長コンテンツ</span></td></tr>
+      <tr><td style="padding:8px 12px;border-bottom:1px solid #eee;">低速</td><td style="padding:8px 12px;border-bottom:1px solid #eee;font-family:monospace;">/slow?delay=N</td><td style="padding:8px 12px;border-bottom:1px solid #eee;"><span class="badge badge-yellow">遅延応答</span></td></tr>
+      <tr><td style="padding:8px 12px;border-bottom:1px solid #eee;">非同期テーブル</td><td style="padding:8px 12px;border-bottom:1px solid #eee;font-family:monospace;">/ajax-table?delay=N</td><td style="padding:8px 12px;border-bottom:1px solid #eee;"><span class="badge badge-blue">JS fetch / 遅延取得</span></td></tr>
+      <tr><td style="padding:8px 12px;border-bottom:1px solid #eee;">横スクロール</td><td style="padding:8px 12px;border-bottom:1px solid #eee;font-family:monospace;">/hscroll</td><td style="padding:8px 12px;border-bottom:1px solid #eee;"><span class="badge badge-blue">横長コンテンツ</span></td></tr>
+      <tr><td style="padding:8px 12px;border-bottom:1px solid #eee;">ページャ</td><td style="padding:8px 12px;border-bottom:1px solid #eee;font-family:monospace;">/pager?page=N</td><td style="padding:8px 12px;border-bottom:1px solid #eee;"><span class="badge badge-blue">ページネーション</span></td></tr>
+      <tr><td style="padding:8px 12px;">404</td><td style="padding:8px 12px;font-family:monospace;">/not-found</td><td style="padding:8px 12px;"><span class="badge badge-red">HTTPエラー</span></td></tr>
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}低速レスポンス ({{ delay }}秒) - WebuiTest App{% endblock %}
+
+{% block extra_style %}
+<style>
+  .delay-badge {
+    display: inline-block;
+    font-size: 3rem;
+    font-weight: 700;
+    color: #e67e22;
+    background: #fef0e0;
+    border-radius: 12px;
+    padding: 12px 32px;
+    margin: 16px 0;
+  }
+  .timeline {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin: 24px 0;
+    font-size: .85rem;
+    color: #666;
+  }
+  .timeline-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+  }
+  .timeline-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: .8rem;
+    margin-bottom: 6px;
+  }
+  .dot-done   { background: #27ae60; color: #fff; }
+  .dot-delay  { background: #e67e22; color: #fff; }
+  .dot-ready  { background: #3498db; color: #fff; }
+  .timeline-line {
+    flex: 1;
+    height: 3px;
+    background: #ddd;
+    margin-bottom: 20px;
+  }
+  .link-list { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>低速レスポンスページ</h1>
+
+<div class="card">
+  <p style="color:#666;margin-bottom:8px;">このページはサーバー側で <strong>{{ delay }} 秒間</strong> 意図的に応答を遅延させました。</p>
+  <p style="color:#666;margin-bottom:16px;">Selenium の待機処理・タイムアウト設定の検証に使用できます。</p>
+
+  <div class="delay-badge" id="delay-value">{{ delay }} 秒遅延</div>
+
+  <div class="timeline">
+    <div class="timeline-step">
+      <div class="timeline-dot dot-done">✓</div>
+      <div>リクエスト受信</div>
+    </div>
+    <div class="timeline-line"></div>
+    <div class="timeline-step">
+      <div class="timeline-dot dot-delay">⏳</div>
+      <div>{{ delay }}秒 待機</div>
+    </div>
+    <div class="timeline-line"></div>
+    <div class="timeline-step">
+      <div class="timeline-dot dot-ready">✓</div>
+      <div>レスポンス送信</div>
+    </div>
+  </div>
+
+  <h2>他の遅延時間で試す</h2>
+  <div class="link-list">
+    <a href="/slow?delay=1"  class="btn btn-secondary" id="btn-delay-1">1秒</a>
+    <a href="/slow?delay=3"  class="btn btn-secondary" id="btn-delay-3">3秒</a>
+    <a href="/slow?delay=5"  class="btn btn-secondary" id="btn-delay-5">5秒</a>
+    <a href="/slow?delay=10" class="btn btn-secondary" id="btn-delay-10">10秒</a>
+    <a href="/slow?delay=15" class="btn btn-secondary" id="btn-delay-15">15秒</a>
+    <a href="/slow?delay=30" class="btn btn-secondary" id="btn-delay-30">30秒</a>
+  </div>
+</div>
+
+<div class="card" style="border-left: 4px solid #3498db;">
+  <h2>テスト用セレクタ一覧</h2>
+  <table style="width:100%;border-collapse:collapse;font-size:.85rem;font-family:monospace;">
+    <tr style="background:#f0f2f5;"><th style="padding:7px 12px;text-align:left;">要素</th><th style="padding:7px 12px;text-align:left;">ID / セレクタ</th></tr>
+    <tr><td style="padding:7px 12px;border-bottom:1px solid #eee;">遅延秒数表示</td><td style="padding:7px 12px;border-bottom:1px solid #eee;">#delay-value</td></tr>
+    <tr><td style="padding:7px 12px;border-bottom:1px solid #eee;">1秒ボタン</td><td style="padding:7px 12px;border-bottom:1px solid #eee;">#btn-delay-1</td></tr>
+    <tr><td style="padding:7px 12px;">5秒ボタン</td><td style="padding:7px 12px;">#btn-delay-5</td></tr>
+  </table>
+</div>
+{% endblock %}
