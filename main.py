@@ -44,7 +44,12 @@ def cli():
     default=None,
     help="環境定義YAMLファイルのパス（省略時は environments/env.yaml を自動探索）",
 )
-def dry_run(test_file: Path, env_file: Optional[Path]):
+@click.option(
+    "--env-id",
+    default=None,
+    help="検証する環境ID（例: chrome_1920x1080）。省略時は env_id の存在チェックをスキップ",
+)
+def dry_run(test_file: Path, env_file: Optional[Path], env_id: Optional[str]):
     """YAMLファイルの構文・スキーマ検証のみを実行します（ブラウザ起動なし）"""
     logger = setup_logger()
 
@@ -54,7 +59,7 @@ def dry_run(test_file: Path, env_file: Optional[Path]):
         click.echo(f"エラー: {e}", err=True)
         sys.exit(1)
 
-    exit_code = run_dry_run(test_file, resolved_env, logger)
+    exit_code = run_dry_run(test_file, resolved_env, env_id=env_id, logger=logger)
     sys.exit(exit_code)
 
 
@@ -72,7 +77,12 @@ def dry_run(test_file: Path, env_file: Optional[Path]):
     default=None,
     help="環境定義YAMLファイルのパス（省略時は environments/env.yaml を自動探索）",
 )
-def run(test_file: Path, output: Path, env_file: Optional[Path]):
+@click.option(
+    "--env-id",
+    required=True,
+    help="使用する環境ID（例: chrome_1920x1080）",
+)
+def run(test_file: Path, output: Path, env_file: Optional[Path], env_id: str):
     """テストを実行します"""
     output_dir = output
 
@@ -88,12 +98,12 @@ def run(test_file: Path, output: Path, env_file: Optional[Path]):
     try:
         scenario = validate_test_file(test_file)
         env_data = validate_env_file(resolved_env)
-        cross_validate(scenario, env_data)
+        cross_validate(env_id, env_data)
     except (YAMLSyntaxError, SchemaValidationError, SemanticValidationError) as e:
         logger.critical(f"設定ファイルのエラー: {e}")
         sys.exit(1)
 
-    env = next(e for e in env_data.environments if e.env_no == scenario.env_no)
+    env = next(e for e in env_data.environments if e.env_id == env_id)
 
     # テスト実行
     try:

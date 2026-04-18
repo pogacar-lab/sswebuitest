@@ -1,8 +1,7 @@
 app_name: "WebuiTest サンプルアプリ"
-description: "全ページ機能テスト - Chrome 1920×1080 全画面"
+description: "全ページ機能テスト（実行時に --env-id chrome_1920x1080 を指定）"
 scenario_name: "webuiapp_fullscreen"
 continue_on_error: true
-env_no: 1
 
 test_cases:
 

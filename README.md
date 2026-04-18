@@ -64,19 +64,23 @@ pip install -r requirements.txt -r flask_testapp/requirements.txt
 
 ### dry-run（YAML 構文・スキーマチェック）
 
-ブラウザを起動せずに YAML ファイルの構文・スキーマ・env_no の整合性を検証します。
+ブラウザを起動せずに YAML ファイルの構文・スキーマを検証します。`--env-id` を指定すると環境の整合性も確認します。
 
 ```bash
-python main.py dry-run tests/webuiapp_fullscreen.yaml --env-file environments/env.yaml
+# 環境 ID を指定して検証
+python main.py dry-run tests/webuiapp_fullscreen.yaml --env-id chrome_1920x1080
+
+# env-id を省略した場合は利用可能な env_id 一覧を表示
+python main.py dry-run tests/webuiapp_fullscreen.yaml
 ```
 
-出力例：
+出力例（`--env-id` 指定あり）：
 
 ```
 [DRY-RUN] tests\webuiapp_fullscreen.yaml
   YAML syntax: OK
   Schema:      OK
-  env_no=1 → browser=chrome, 1920x1080, headless=False
+  env_id=chrome_1920x1080 → browser=chrome, 1920x1080, headless=False
   Test cases: 9
     [001] top_page                       0 actions  screenshot=True  scroll=False
     [002] form_submit                   11 actions  screenshot=True  scroll=False
@@ -84,11 +88,26 @@ python main.py dry-run tests/webuiapp_fullscreen.yaml --env-file environments/en
 RESULT: PASSED
 ```
 
+出力例（`--env-id` 省略）：
+
+```
+[DRY-RUN] tests\webuiapp_fullscreen.yaml
+  YAML syntax: OK
+  Schema:      OK
+  利用可能な env_id: chrome_1920x1080, chrome_960x1080
+  Test cases: 9
+    ...
+RESULT: PASSED
+```
+
 ### run（テスト実行）
+
+`--env-id` は必須オプションです。
 
 ```bash
 python main.py run tests/webuiapp_fullscreen.yaml \
   --output results/fullscreen \
+  --env-id chrome_1920x1080 \
   --env-file environments/env.yaml
 ```
 
@@ -99,8 +118,8 @@ python main.py run tests/webuiapp_fullscreen.yaml \
 ```
 results/
 └── fullscreen/
-    ├── test_run.log          # 実行ログ（タイムスタンプ付き）
-    └── env_1/
+    ├── test_run.log               # 実行ログ（タイムスタンプ付き）
+    └── chrome_1920x1080/
         ├── 001_top_page.jpg
         ├── 002_form_submit.jpg
         ├── 003_table_scroll.jpg   # スクロール合成画像
@@ -121,7 +140,7 @@ app_name: "アプリ名"
 description: "テストの説明"
 scenario_name: "scenario_id"
 continue_on_error: false        # true: 失敗しても次のケースへ続行
-env_no: 1                       # 環境定義ファイルの env_no と対応
+                                # 使用環境は実行時に --env-id で指定
 
 test_cases:
   - name: ケース名
@@ -159,7 +178,7 @@ test_cases:
 
 ```yaml
 environments:
-  - env_no: 1                   # テストケースの env_no と対応（"no" は YAML 予約語のため不可）
+  - env_id: chrome_1920x1080    # 実行時に --env-id で指定する識別子
     browser: chrome             # chrome / firefox / edge
     window_width: 1920
     window_height: 1080
@@ -167,9 +186,16 @@ environments:
       headless: false
       zoom: 1.0
       compatibility_mode: false
-```
 
-> **注意:** YAML 1.1 仕様では `no` がブール値 `false` に変換されるため、フィールド名は `env_no` を使用してください。
+  - env_id: chrome_1280x800_headless
+    browser: chrome
+    window_width: 1280
+    window_height: 800
+    options:
+      headless: true
+      zoom: 1.0
+      compatibility_mode: false
+```
 
 ---
 
@@ -208,10 +234,10 @@ python flask_testapp/app.py
 
 ## サンプルテストケース（Flask アプリ向け）
 
-| ファイル | 環境 | ウィンドウサイズ |
+| ファイル | 推奨 env_id | ウィンドウサイズ |
 |---|---|---|
-| `tests/webuiapp_fullscreen.yaml` | env_no: 1 | 1920 × 1080（全画面） |
-| `tests/webuiapp_half.yaml` | env_no: 2 | 960 × 1080（Windows スナップ右半分） |
+| `tests/webuiapp_fullscreen.yaml` | `chrome_1920x1080` | 1920 × 1080（全画面） |
+| `tests/webuiapp_half.yaml` | `chrome_960x1080` | 960 × 1080（Windows スナップ右半分） |
 
 どちらも同じ 9 ケースを含みます：
 
@@ -230,8 +256,8 @@ python flask_testapp/app.py
 実行コマンド：
 
 ```bash
-python main.py run tests/webuiapp_fullscreen.yaml --output results/fullscreen --env-file environments/env.yaml
-python main.py run tests/webuiapp_half.yaml       --output results/half       --env-file environments/env.yaml
+python main.py run tests/webuiapp_fullscreen.yaml --output results/fullscreen --env-id chrome_1920x1080
+python main.py run tests/webuiapp_half.yaml       --output results/half       --env-id chrome_960x1080
 ```
 
 ---

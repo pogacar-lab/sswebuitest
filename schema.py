@@ -19,7 +19,7 @@ class BrowserOptions(BaseModel):
 
 
 class Environment(BaseModel):
-    env_no: int
+    env_id: str                 # 識別子（例: chrome_1920x1080）
     browser: BrowserType
     version: Optional[str] = None
     window_width: int = 1280
@@ -78,5 +78,4 @@ class TestScenario(BaseModel):
     description: str
     scenario_name: str
     continue_on_error: bool = False
-    env_no: int
     test_cases: list[TestCase] = Field(default_factory=list)

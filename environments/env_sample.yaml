@@ -1,5 +1,5 @@
 environments:
-  - env_no: 1
+  - env_id: chrome_1440x900
     browser: chrome
     window_width: 1440
     window_height: 900
@@ -8,7 +8,7 @@ environments:
       zoom: 1.0
       compatibility_mode: false
 
-  - env_no: 2
+  - env_id: chrome_1280x800_headless
     browser: chrome
     window_width: 1280
     window_height: 800
@@ -17,7 +17,7 @@ environments:
       zoom: 1.0
       compatibility_mode: false
 
-  - env_no: 3
+  - env_id: firefox_1280x800
     browser: firefox
     window_width: 1280
     window_height: 800
@@ -26,7 +26,7 @@ environments:
       zoom: 1.0
       compatibility_mode: false
 
-  - env_no: 4
+  - env_id: edge_1440x900_zoom125
     browser: edge
     window_width: 1440
     window_height: 900

@@ -51,24 +51,26 @@ def validate_env_file(path: Path) -> EnvironmentFile:
         raise SchemaValidationError(str(e)) from e
 
 
-def cross_validate(scenario: TestScenario, env_file: EnvironmentFile) -> None:
-    nos = {env.env_no for env in env_file.environments}
-    if scenario.env_no not in nos:
+def cross_validate(env_id: str, env_file: EnvironmentFile) -> None:
+    ids = {env.env_id for env in env_file.environments}
+    if env_id not in ids:
         raise SemanticValidationError(
-            f"env_no={scenario.env_no} が環境定義ファイルに見つかりません (定義済み: {sorted(nos)})"
+            f"env_id='{env_id}' が環境定義ファイルに見つかりません "
+            f"(定義済み: {sorted(ids)})"
         )
 
 
 def run_dry_run(
     test_file: Path,
     env_file: Path,
+    env_id: Optional[str] = None,
     logger: Optional[logging.Logger] = None,
 ) -> int:
     log = logger or logging.getLogger("webuiTest")
 
     log.info(f"[DRY-RUN] {test_file}")
 
-    # YAML構文チェック
+    # テストYAML 構文・スキーマチェック
     try:
         scenario = validate_test_file(test_file)
     except YAMLSyntaxError as e:
@@ -92,18 +94,21 @@ def run_dry_run(
         log.error(f"  Env file Schema:      NG\n{e}")
         return 1
 
-    # クロスバリデーション
-    try:
-        cross_validate(scenario, env_data)
-    except SemanticValidationError as e:
-        log.error(f"  Cross-validation: NG - {e}")
-        return 1
-
-    env = next(e for e in env_data.environments if e.env_no == scenario.env_no)
-    log.info(
-        f"  env_no={scenario.env_no} → browser={env.browser.value}, "
-        f"{env.window_width}x{env.window_height}, headless={env.options.headless}"
-    )
+    # --env-id が指定された場合のみクロスバリデーション
+    if env_id is not None:
+        try:
+            cross_validate(env_id, env_data)
+        except SemanticValidationError as e:
+            log.error(f"  Cross-validation: NG - {e}")
+            return 1
+        env = next(e for e in env_data.environments if e.env_id == env_id)
+        log.info(
+            f"  env_id='{env_id}' → browser={env.browser.value}, "
+            f"{env.window_width}x{env.window_height}, headless={env.options.headless}"
+        )
+    else:
+        ids = sorted(e.env_id for e in env_data.environments)
+        log.info(f"  利用可能な env_id: {ids}")
 
     log.info(f"  Test cases: {len(scenario.test_cases)}")
     for i, tc in enumerate(scenario.test_cases, 1):

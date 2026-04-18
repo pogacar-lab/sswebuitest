@@ -1,8 +1,7 @@
 app_name: "WebuiTest サンプルアプリ"
-description: "全ページ機能テスト - Chrome 960×1080 縦長（Winキー＋右矢印）"
+description: "全ページ機能テスト（実行時に --env-id chrome_960x1080 を指定）"
 scenario_name: "webuiapp_half"
 continue_on_error: true
-env_no: 2
 
 test_cases:
 

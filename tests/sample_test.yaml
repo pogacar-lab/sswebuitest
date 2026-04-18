@@ -5,7 +5,6 @@ app_name: "サンプルアプリ"
 description: "ログイン・ダッシュボードのスモークテスト"
 scenario_name: "login_smoke"
 continue_on_error: false
-env_no: 1
 
 test_cases:
   - name: ログインページ表示
