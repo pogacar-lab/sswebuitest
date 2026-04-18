@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import sys
-from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -108,7 +107,6 @@ def run(test_file: Path, output: Path, env_file: Optional[Path], env_id: str):
     env = next(e for e in env_data.environments if e.env_id == env_id)
 
     # テスト実行
-    run_start = datetime.now()
     try:
         runner = TestRunner(scenario, env, output_dir, logger)
         results = runner.run()
@@ -123,7 +121,6 @@ def run(test_file: Path, output: Path, env_file: Optional[Path], env_id: str):
             scenario_name=scenario.scenario_name,
             env_id=env_id,
             results=results,
-            timestamp=run_start,
         )
         logger.info(f"レポート出力: {report_path}")
     except Exception as e:
