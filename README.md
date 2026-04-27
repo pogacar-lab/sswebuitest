@@ -1,7 +1,8 @@
 # WebuiTest
 
-Selenium を使った Python 製 Web UI テスト自動化ツールです。
+Selenium / Playwright を使った Python 製 Web UI テスト自動化ツールです。
 YAML ファイルでテストシナリオを記述し、`run`（実行）と `dry-run`（構文チェック）の 2 モードで動作します。
+環境定義ファイルの `engine` フィールドで Selenium と Playwright を切り替えられます。
 
 ---
 
@@ -12,7 +13,11 @@ WebuiTest/
 ├── main.py                  # CLI エントリーポイント
 ├── schema.py                # Pydantic v2 データモデル
 ├── validator.py             # YAML バリデーション（dry-run）
-├── browser.py               # WebDriver 管理（Chrome / Firefox / Edge）
+├── driver_protocol.py       # DriverProtocol 抽象インターフェース
+├── driver_factory.py        # エンジン選択ファクトリ（create_driver）
+├── selenium_driver.py       # Selenium ドライバー実装
+├── playwright_driver.py     # Playwright ドライバー実装
+├── browser.py               # 後方互換用 Selenium ブラウザ管理
 ├── actions.py               # アクション実行
 ├── screenshot.py            # スクリーンショット（通常・スクロール合成）
 ├── runner.py                # テスト実行オーケストレーション
@@ -56,6 +61,9 @@ venv\Scripts\activate          # Windows
 
 # テストツール + Flask アプリの依存パッケージを一括インストール
 pip install -r requirements.txt -r flask_testapp/requirements.txt
+
+# Playwright ブラウザバイナリのインストール（Playwright を使う場合のみ）
+playwright install
 ```
 
 ---
@@ -93,9 +101,16 @@ RESULT: PASSED
 `--env-id` は必須オプションです。実行のたびに別の `--output` ディレクトリを指定してください。
 
 ```bash
+# Selenium (Chrome) で実行
 python main.py run tests/webuiapp_fullscreen_check.yaml \
   --output results/fullscreen \
   --env-id chrome_1920x1080 \
+  --env-file environments/env.yaml
+
+# Playwright (Chromium) で実行
+python main.py run tests/webuiapp_fullscreen_check.yaml \
+  --output results/fullscreen_pw \
+  --env-id chromium_1920x1080_pw \
   --env-file environments/env.yaml
 ```
 
@@ -248,7 +263,19 @@ test_cases:
 ```yaml
 environments:
   - env_id: chrome_1920x1080    # 実行時に --env-id で指定する識別子
-    browser: chrome             # chrome / firefox / edge
+    browser: chrome             # Selenium: chrome / firefox / edge
+                                # Playwright: chromium / firefox / webkit / chrome / edge
+    engine: selenium            # selenium（デフォルト）または playwright
+    window_width: 1920
+    window_height: 1080
+    options:
+      headless: false
+      zoom: 1.0
+      compatibility_mode: false
+
+  - env_id: chromium_1920x1080_pw
+    browser: chromium
+    engine: playwright
     window_width: 1920
     window_height: 1080
     options:
@@ -258,6 +285,7 @@ environments:
 
   - env_id: chrome_1280x800_headless
     browser: chrome
+    engine: selenium
     window_width: 1280
     window_height: 800
     options:
@@ -265,6 +293,66 @@ environments:
       zoom: 1.0
       compatibility_mode: false
 ```
+
+#### `engine` フィールドと対応ブラウザ
+
+| engine | browser に指定できる値 | 備考 |
+|---|---|---|
+| `selenium`（デフォルト） | `chrome`, `firefox`, `edge` | webdriver-manager でドライバーを自動管理 |
+| `playwright` | `chromium`, `firefox`, `webkit`, `chrome`, `edge` | `playwright install` でバイナリを事前取得 |
+
+---
+
+## オフライン環境での使用
+
+> **Selenium エンジン専用です。** Playwright エンジンはブラウザバイナリを独自管理しており、`WEBUITEST_DRIVER_DIR` は無視されます。オフライン環境で Playwright を使う場合は `playwright install` 実行時にキャッシュ済みのバイナリが利用されます。
+
+インターネットに接続できない環境でも、ブラウザドライバーを手動で配置することで動作します（`engine: selenium` 使用時）。
+
+### 仕組み
+
+環境変数 `WEBUITEST_DRIVER_DIR` が設定されている場合、webdriver-manager によるドライバーの自動ダウンロードをスキップし、指定ディレクトリ内のドライバーを使用します。未設定の場合は通常のオンラインモードで動作します。
+
+### ドライバーの配置
+
+```
+{WEBUITEST_DRIVER_DIR}/
+├── chromedriver.exe     # Chrome  （Windows）
+├── geckodriver.exe      # Firefox （Windows）
+└── msedgedriver.exe     # Edge    （Windows）
+```
+
+Linux / Mac の場合は拡張子なし（`chromedriver`, `geckodriver`, `msedgedriver`）。
+
+ブラウザのバージョンに対応したドライバーを以下から入手してください。
+
+| ブラウザ | ドライバー | 配布元 |
+|---|---|---|
+| Chrome | ChromeDriver | https://googlechromelabs.github.io/chrome-for-testing/ |
+| Firefox | GeckoDriver | https://github.com/mozilla/geckodriver/releases |
+| Edge | EdgeDriver | https://developer.microsoft.com/microsoft-edge/tools/webdriver/ |
+
+> **バージョン一致**: ドライバーはインストール済みブラウザのバージョンと一致するものを使用してください。
+
+### 環境変数の設定方法
+
+```bat
+:: Windows（コマンドプロンプト・セッション限定）
+set WEBUITEST_DRIVER_DIR=C:\drivers\webui
+
+:: Windows（PowerShell・セッション限定）
+$env:WEBUITEST_DRIVER_DIR = "C:\drivers\webui"
+
+:: Windows（システム環境変数として永続化）
+setx WEBUITEST_DRIVER_DIR "C:\drivers\webui"
+```
+
+```bash
+# Linux / Mac
+export WEBUITEST_DRIVER_DIR=/opt/webdrivers
+```
+
+設定後はそのまま通常の run / dry-run コマンドを実行できます。ファイルが見つからない場合は起動時にエラーメッセージと期待するパスが表示されます。
 
 ---
 
@@ -299,13 +387,120 @@ python flask_testapp/app.py
 
 各ページの要素には `id` 属性が付与されているため、テスト YAML のセレクタに `#id名` で指定できます。
 
+### 操作要素リファレンス
+
+YAML を記述する際のセレクタ・値の参照用一覧です。
+
+#### `/form` ページ
+
+| ID | 要素 | アクション型 | 備考 |
+|---|---|---|---|
+| `#username` | ユーザー名 | `input` | |
+| `#email` | メールアドレス | `input` | |
+| `#password` | パスワード | `input` | |
+| `#age` | 年齢 | `input` | 数値（0〜150） |
+| `#birth_date` | 生年月日 | `input` | `YYYY-MM-DD` 形式 |
+| `#country` | 国・地域 | `select` | value 値: `jp` / `us` / `uk` / `de` / `fr` / `cn` / `kr` / `au` / `other` |
+| `#plan-free` | プラン：無料 | `click` | ラジオボタンは `type: check` ではなく **`type: click`** で選択 |
+| `#plan-basic` | プラン：ベーシック | `click` | |
+| `#plan-pro` | プラン：プロ | `click` | |
+| `#plan-enterprise` | プラン：エンタープライズ | `click` | |
+| `#interest-tech` | 興味：テクノロジー | `check` | |
+| `#interest-business` | 興味：ビジネス | `check` | |
+| `#interest-design` | 興味：デザイン | `check` | |
+| `#interest-marketing` | 興味：マーケティング | `check` | |
+| `#interest-finance` | 興味：ファイナンス | `check` | |
+| `#interest-health` | 興味：ヘルス・医療 | `check` | |
+| `#score` | 満足度スコア | `input` | 数値（0〜10） |
+| `#message` | お問い合わせ内容 | `input` | textarea |
+| `#newsletter` | メルマガ購読 | `check` | |
+| `#agree` | 利用規約同意 | `check` | 送信に必須 |
+| `#btn-submit` | 送信ボタン | `click` | |
+| `#btn-reset` | リセットボタン | `click` | |
+
+送信後（結果確認ページ）に現れる要素:
+
+| ID | 内容 |
+|---|---|
+| `#result-username` / `#result-email` / `#result-age` / `#result-birth` / `#result-country` / `#result-plan` / `#result-interests` / `#result-score` / `#result-newsletter` / `#result-agree` / `#result-message` | 送信値の確認セル |
+| `#btn-back-form` | フォームに戻るボタン |
+
+#### `/slow` ページ
+
+| ID | 要素 | 備考 |
+|---|---|---|
+| `#delay-value` | 遅延秒数表示 | 読み取り用 |
+| `#btn-delay-1` 〜 `#btn-delay-30` | 遅延プリセットリンク | `1` / `3` / `5` / `10` / `15` / `30` 秒 |
+
+#### `/pager` ページ
+
+| ID | 要素 | 備考 |
+|---|---|---|
+| `#pager-first` | 先頭ページへ | ページ 1 以外のときだけリンクとして存在（クリック可） |
+| `#pager-prev` | 前のページへ | ページ 1 以外のときだけリンクとして存在（クリック可） |
+| `#pager-p{N}` | ページ N へのリンク | **現在ページが N の場合は `#pager-current`（`<span>`）に変わりクリック不可** |
+| `#pager-current` | 現在ページ番号 | `<span>` のためクリック不可 |
+| `#pager-next` | 次のページへ | 最終ページ以外のときだけリンクとして存在 |
+| `#pager-last` | 最終ページへ | 最終ページ以外のときだけリンクとして存在 |
+| `#prow-{N}` | テーブル行（N = 1〜10） | 現在ページ内の行番号 |
+
+> ページ遷移後に `#pager-p{N}` をクリックする場合、その N が遷移先と一致しないか確認してください。例：ページ 3 にいるとき `#pager-p3` は存在せず `#pager-current` になります。
+
+#### `/ajax-table` ページ
+
+| ID | 要素 | 備考 |
+|---|---|---|
+| `#loading-area` | ローディング表示 | fetch 完了後は非表示 |
+| `#table-area` | テーブル表示エリア | fetch 完了後のみ表示 |
+| `#arow-{N}` | テーブル行（N = 1〜30） | **fetch 完了後に JS で動的生成** |
+| `#delay-input` | 遅延秒数入力 | `input` |
+| `#btn-reload` | 再取得ボタン | `click` |
+| `#btn-d0` / `#btn-d2` / `#btn-d5` / `#btn-d10` / `#btn-d20` | 遅延プリセットリンク | `click` |
+| `#result-count` / `#result-delay` / `#result-elapsed` | 取得結果メタ情報 | fetch 完了後のみ存在 |
+
+#### `/` トップページ
+
+| ID | リンク先 |
+|---|---|
+| `#btn-to-form` | `/form` |
+| `#btn-to-table` | `/table` |
+| `#btn-slow-3` / `#btn-slow-5` / `#btn-slow-10` | `/slow?delay=N` |
+| `#btn-to-hscroll` | `/hscroll` |
+| `#btn-to-pager` | `/pager` |
+| `#btn-ajax-2` / `#btn-ajax-5` / `#btn-ajax-10` | `/ajax-table?delay=N` |
+| `#btn-to-404` | `/not-found` |
+
+### YAML 記述のポイント
+
+**ラジオボタンの操作**
+
+ラジオボタン（`<input type="radio">`）は `type: check` では操作できません。`type: click` を使います。
+
+```yaml
+- type: click
+  selector: "#plan-pro"    # ラジオボタンは click で選択
+```
+
+**非同期コンテンツの待機**
+
+`/ajax-table` のように JS で動的生成される要素は、`type: click` で指定すると要素が DOM に現れるまで自動的に待機します（デフォルト 10 秒）。
+
+```yaml
+- type: click
+  selector: "#arow-1"    # fetch 完了後に生成される要素 → 存在するまで最大10秒待機
+```
+
+**要素の待機タイムアウト**
+
+アクション実行時に要素が見つからない場合、デフォルトで **10 秒間** 待機します。動的コンテンツのロードに 10 秒以上かかる場合は `entry_url` の前に `wait` を設けるか、より軽い要素をトリガーにしてください。
+
 ---
 
 ## サンプルテストケース（Flask アプリ向け）
 
 | ファイル | 推奨 env_id | ウィンドウサイズ |
 |---|---|---|
-| `tests/webuiapp_fullscreen_check.yaml` | `chrome_1920x1080` | 1920 × 1080（全画面） |
+| `tests/webuiapp_fullscreen_check.yaml` | `chrome_1920x1080`（Selenium）/ `chromium_1920x1080_pw`（Playwright） | 1920 × 1080（全画面） |
 
 9 ケースを含みます：
 
@@ -314,17 +509,21 @@ python flask_testapp/app.py
 | 001 | top_page | トップページのスクリーンショット |
 | 002 | form_submit | フォーム入力・送信・結果確認 |
 | 003 | table_scroll | 縦長テーブルの全ページスクロール合成撮影 |
-| 004 | slow_3sec | 3 秒遅延ページ（`driver.get()` がサーバー応答まで待機） |
+| 004 | slow_3sec | 3 秒遅延ページ（ページ読み込み完了まで自動待機） |
 | 005 | hscroll_table | 横スクロールテーブルのスクリーンショット |
 | 006 | pager_page1 | ページャ 1 ページ目確認 |
 | 007 | pager_navigation | ページ遷移（1→3→4→3→最終ページ） |
-| 008 | ajax_table_3sec | 非同期テーブル取得（`#arow-1` の DOM 出現を WebDriverWait で待機） |
+| 008 | ajax_table_3sec | 非同期テーブル取得（`#arow-1` の DOM 出現まで自動待機） |
 | 009 | error_404 | 404 エラーページのスクリーンショット |
 
 実行コマンド：
 
 ```bash
+# Selenium
 python main.py run tests/webuiapp_fullscreen_check.yaml --output results/fullscreen --env-id chrome_1920x1080
+
+# Playwright
+python main.py run tests/webuiapp_fullscreen_check.yaml --output results/fullscreen_pw --env-id chromium_1920x1080_pw
 ```
 
 ---
@@ -333,8 +532,9 @@ python main.py run tests/webuiapp_fullscreen_check.yaml --output results/fullscr
 
 | パッケージ | 用途 |
 |---|---|
-| selenium | ブラウザ操作 |
-| webdriver-manager | ChromeDriver / GeckoDriver の自動管理 |
+| selenium | ブラウザ操作（Selenium エンジン使用時） |
+| webdriver-manager | ChromeDriver / GeckoDriver の自動管理（Selenium エンジン使用時） |
+| playwright | ブラウザ操作（Playwright エンジン使用時） |
 | pydantic v2 | YAML スキーマ検証・データモデル |
 | pyyaml | YAML 読み込み |
 | Pillow | スクリーンショットの JPEG 変換・スクロール合成 |

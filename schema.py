@@ -10,6 +10,8 @@ class BrowserType(str, Enum):
     CHROME = "chrome"
     FIREFOX = "firefox"
     EDGE = "edge"
+    CHROMIUM = "chromium"   # Playwright 専用
+    WEBKIT = "webkit"       # Playwright 専用
 
 
 class BrowserOptions(BaseModel):
@@ -21,6 +23,7 @@ class BrowserOptions(BaseModel):
 class Environment(BaseModel):
     env_id: str                 # 識別子（例: chrome_1920x1080）
     browser: BrowserType
+    engine: Literal["selenium", "playwright"] = "selenium"
     version: Optional[str] = None
     window_width: int = 1280
     window_height: int = 800

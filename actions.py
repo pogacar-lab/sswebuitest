@@ -4,17 +4,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Optional
 
-from selenium.webdriver.remote.webdriver import WebDriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait, Select as SeleniumSelect
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import (
-    TimeoutException,
-    NoSuchElementException,
-    StaleElementReferenceException,
-    NoSuchWindowException,
-)
-
+from driver_protocol import DriverProtocol
 from schema import (
     Action,
     ClickAction,
@@ -52,64 +42,36 @@ class ActionError(Exception):
         )
 
 
-def _resolve_selector(selector: str) -> tuple[str, str]:
-    if selector.startswith("/") or selector.startswith("("):
-        return By.XPATH, selector
-    return By.CSS_SELECTOR, selector
-
-
-def execute_click(driver: WebDriver, action: ClickAction, timeout: float = DEFAULT_WAIT_TIMEOUT) -> None:
-    by, value = _resolve_selector(action.selector)
+def execute_click(driver: DriverProtocol, action: ClickAction, timeout: float = DEFAULT_WAIT_TIMEOUT) -> None:
     try:
-        element = WebDriverWait(driver, timeout).until(
-            EC.element_to_be_clickable((by, value))
-        )
-        element.click()
-    except (TimeoutException, NoSuchElementException, StaleElementReferenceException) as e:
+        driver.do_click(action.selector, timeout)
+    except Exception as e:
         raise ActionError(action, e) from e
 
 
-def execute_input(driver: WebDriver, action: InputAction, timeout: float = DEFAULT_WAIT_TIMEOUT) -> None:
-    by, value = _resolve_selector(action.selector)
+def execute_input(driver: DriverProtocol, action: InputAction, timeout: float = DEFAULT_WAIT_TIMEOUT) -> None:
     try:
-        element = WebDriverWait(driver, timeout).until(
-            EC.visibility_of_element_located((by, value))
-        )
-        element.clear()
-        element.send_keys(action.value)
-    except (TimeoutException, NoSuchElementException, StaleElementReferenceException) as e:
+        driver.do_fill(action.selector, action.value, timeout)
+    except Exception as e:
         raise ActionError(action, e) from e
 
 
-def execute_select(driver: WebDriver, action: SelectAction, timeout: float = DEFAULT_WAIT_TIMEOUT) -> None:
-    by, value = _resolve_selector(action.selector)
+def execute_select(driver: DriverProtocol, action: SelectAction, timeout: float = DEFAULT_WAIT_TIMEOUT) -> None:
     try:
-        element = WebDriverWait(driver, timeout).until(
-            EC.presence_of_element_located((by, value))
-        )
-        sel = SeleniumSelect(element)
-        try:
-            sel.select_by_value(action.value)
-        except Exception:
-            sel.select_by_visible_text(action.value)
-    except (TimeoutException, NoSuchElementException, StaleElementReferenceException) as e:
+        driver.do_select(action.selector, action.value, timeout)
+    except Exception as e:
         raise ActionError(action, e) from e
 
 
-def execute_check(driver: WebDriver, action: CheckAction, timeout: float = DEFAULT_WAIT_TIMEOUT) -> None:
-    by, value = _resolve_selector(action.selector)
+def execute_check(driver: DriverProtocol, action: CheckAction, timeout: float = DEFAULT_WAIT_TIMEOUT) -> None:
     try:
-        element = WebDriverWait(driver, timeout).until(
-            EC.presence_of_element_located((by, value))
-        )
-        if element.is_selected() != action.checked:
-            element.click()
-    except (TimeoutException, NoSuchElementException, StaleElementReferenceException) as e:
+        driver.do_check(action.selector, action.checked, timeout)
+    except Exception as e:
         raise ActionError(action, e) from e
 
 
 def execute_switch_window(
-    driver: WebDriver,
+    driver: DriverProtocol,
     action: SwitchWindowAction,
     ctx: WindowContext,
     timeout: float = DEFAULT_WAIT_TIMEOUT,
@@ -124,70 +86,57 @@ def execute_switch_window(
         _, alias = target_part.split(" as ", 1)
         alias = alias.strip()
 
-    current_handle = driver.current_window_handle
-    current_handles = set(driver.window_handles)
+    current_handle = driver.get_current_window_handle()
+    current_handles = set(driver.get_window_handles())
 
-    # 新ウィンドウが開くまで待機
     try:
-        WebDriverWait(driver, timeout).until(
-            lambda d: len(set(d.window_handles) - current_handles) > 0
-        )
-    except TimeoutException as e:
-        raise ActionError(
-            action,
-            TimeoutException(f"新しいウィンドウが {timeout} 秒以内に開きませんでした"),
-        ) from e
+        new_handle = driver.wait_for_new_window(current_handles, timeout)
+    except TimeoutError as e:
+        raise ActionError(action, e) from e
 
-    new_handles = set(driver.window_handles) - current_handles
-    new_handle = new_handles.pop()
-
-    # 現在のハンドルをスタックへ積んでから切り替え
     ctx.stack.append(current_handle)
     try:
-        driver.switch_to.window(new_handle)
-    except NoSuchWindowException as e:
+        driver.switch_to_window(new_handle)
+    except Exception as e:
         ctx.stack.pop()  # 失敗したのでスタックを元に戻す
         raise ActionError(action, e) from e
 
-    # エイリアスを登録（既存の場合は上書き）
     if alias:
         ctx.registry[alias] = new_handle
 
 
 def execute_close_window(
-    driver: WebDriver,
+    driver: DriverProtocol,
     action: CloseWindowAction,
     ctx: WindowContext,
 ) -> None:
     """現在のウィンドウを閉じ、スタックから戻り先を復元する。
     スタックが空の場合は残存するウィンドウハンドルの末尾へ移動する。
     """
-    closed_handle = driver.current_window_handle
-    driver.close()
+    closed_handle = driver.get_current_window_handle()
+    driver.close_current_window()
 
-    # 閉じたハンドルをレジストリから除去
     ctx.registry = {k: v for k, v in ctx.registry.items() if v != closed_handle}
 
-    # スタックから有効な戻り先を取得
     restore_handle: Optional[str] = None
     while ctx.stack:
         candidate = ctx.stack.pop()
-        if candidate in driver.window_handles:
+        if candidate in driver.get_window_handles():
             restore_handle = candidate
             break
 
-    if restore_handle is None and driver.window_handles:
-        restore_handle = driver.window_handles[-1]
+    if restore_handle is None and driver.get_window_handles():
+        restore_handle = driver.get_window_handles()[-1]
 
     if restore_handle:
         try:
-            driver.switch_to.window(restore_handle)
-        except NoSuchWindowException as e:
+            driver.switch_to_window(restore_handle)
+        except Exception as e:
             raise ActionError(action, e) from e
 
 
 def execute_action(
-    driver: WebDriver,
+    driver: DriverProtocol,
     action: Action,
     ctx: Optional[WindowContext] = None,
     timeout: float = DEFAULT_WAIT_TIMEOUT,

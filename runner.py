@@ -8,7 +8,8 @@ from pathlib import Path
 from typing import Optional
 
 from schema import Environment, TestCase, TestScenario, ScreenshotAction
-from browser import BrowserManager, BrowserStartError
+from driver_factory import create_driver
+from driver_protocol import DriverProtocol, BrowserStartError
 from actions import execute_action, ActionError, WindowContext
 from screenshot import take_screenshot, take_scroll_screenshot, ScreenshotError
 from logger import get_logger
@@ -49,9 +50,9 @@ class TestRunner:
         ctx = WindowContext()  # セッション全体でウィンドウ別名・スタックを共有
 
         try:
-            with BrowserManager(self._env) as browser:
+            with create_driver(self._env) as driver:
                 for i, tc in enumerate(self._scenario.test_cases, 1):
-                    result = self._run_test_case(tc, i, browser, screenshot_dir, ctx)
+                    result = self._run_test_case(tc, i, driver, screenshot_dir, ctx)
                     results.append(result)
 
                     if not result.passed and not self._scenario.continue_on_error:
@@ -73,11 +74,10 @@ class TestRunner:
         self,
         tc: TestCase,
         index: int,
-        browser: BrowserManager,
+        driver: DriverProtocol,
         screenshot_dir: Path,
         ctx: WindowContext,
     ) -> TestResult:
-        driver = browser.get_driver()
         result = TestResult(name=tc.name, passed=True)
         ss_counter = 0  # このテストケース内のスクショ連番（type: screenshot の個数）
 
@@ -91,15 +91,15 @@ class TestRunner:
                 if alias not in ctx.registry:
                     raise RuntimeError(f"ウィンドウ '{alias}' が登録されていません")
                 target_handle = ctx.registry[alias]
-                if target_handle not in driver.window_handles:
+                if target_handle not in driver.get_window_handles():
                     raise RuntimeError(f"ウィンドウ '{alias}' はすでに閉じられています")
-                if driver.current_window_handle != target_handle:
-                    driver.switch_to.window(target_handle)
+                if driver.get_current_window_handle() != target_handle:
+                    driver.switch_to_window(target_handle)
                     self._logger.debug(f"  ウィンドウ切り替え: {alias}")
 
             # entry_url: 省略時は現在のウィンドウ状態を引き継ぐ
             if tc.entry_url:
-                driver.get(tc.entry_url)
+                driver.navigate(tc.entry_url)
                 self._logger.debug(f"  URL: {tc.entry_url}")
 
             # アクション実行ループ
@@ -168,7 +168,7 @@ class TestRunner:
 
     def _take_error_screenshot(
         self,
-        driver,
+        driver: DriverProtocol,
         tc: TestCase,
         index: int,
         screenshot_dir: Path,

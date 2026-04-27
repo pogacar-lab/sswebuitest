@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from selenium import webdriver
 from selenium.webdriver.remote.webdriver import WebDriver
@@ -12,17 +12,21 @@ from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium.webdriver.firefox.service import Service as FirefoxService
 from selenium.webdriver.edge.options import Options as EdgeOptions
 from selenium.webdriver.edge.service import Service as EdgeService
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait, Select as SeleniumSelect
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.firefox import GeckoDriverManager
 from webdriver_manager.microsoft import EdgeChromiumDriverManager
 
 from schema import BrowserType, Environment
+from driver_protocol import BrowserStartError
 from logger import get_logger
 
 # この環境変数が設定されているとオフラインモードで動作する
 DRIVER_DIR_ENV = "WEBUITEST_DRIVER_DIR"
 
-# ブラウザ種別 → ドライバー実行ファイル名（Windows / その他）
 _DRIVER_FILENAMES: dict[BrowserType, tuple[str, str]] = {
     BrowserType.CHROME:  ("chromedriver.exe",  "chromedriver"),
     BrowserType.FIREFOX: ("geckodriver.exe",   "geckodriver"),
@@ -30,18 +34,13 @@ _DRIVER_FILENAMES: dict[BrowserType, tuple[str, str]] = {
 }
 
 
-class BrowserStartError(Exception):
-    pass
-
-
 def _resolve_driver_executable(browser: BrowserType) -> Optional[str]:
     """環境変数 WEBUITEST_DRIVER_DIR が設定されていればオフラインドライバーのパスを返す。
     未設定の場合は None を返し、webdriver-manager によるオンライン取得に委ねる。
-    ファイルが見つからない場合は BrowserStartError を送出する。
     """
     driver_dir = os.environ.get(DRIVER_DIR_ENV)
     if not driver_dir:
-        return None  # オンラインモード
+        return None
 
     dir_path = Path(driver_dir)
     win_name, other_name = _DRIVER_FILENAMES[browser]
@@ -59,16 +58,22 @@ def _resolve_driver_executable(browser: BrowserType) -> Optional[str]:
     return str(exe_path)
 
 
-class BrowserManager:
+def _resolve_by(selector: str) -> tuple[str, str]:
+    if selector.startswith("/") or selector.startswith("("):
+        return By.XPATH, selector
+    return By.CSS_SELECTOR, selector
+
+
+class SeleniumDriver:
+    """Selenium WebDriver を DriverProtocol に適合させるアダプター。"""
+
     def __init__(self, env: Environment) -> None:
         self._env = env
         self._driver: Optional[WebDriver] = None
 
-    def start(self) -> WebDriver:
+    def start(self) -> SeleniumDriver:
         try:
             self._driver = self._create_driver()
-        except BrowserStartError:
-            raise
         except Exception as e:
             raise BrowserStartError(f"ブラウザの起動に失敗しました: {e}") from e
 
@@ -80,11 +85,11 @@ class BrowserManager:
             )
 
         get_logger().info(
-            f"ブラウザ起動: {self._env.browser.value} "
+            f"ブラウザ起動 (Selenium): {self._env.browser.value} "
             f"{self._env.window_width}x{self._env.window_height} "
             f"headless={self._env.options.headless}"
         )
-        return self._driver
+        return self
 
     def _create_driver(self) -> WebDriver:
         opts = self._env.options
@@ -119,7 +124,73 @@ class BrowserManager:
             service = EdgeService(exe or EdgeChromiumDriverManager().install())
             return webdriver.Edge(service=service, options=options)
 
-        raise BrowserStartError(f"未対応のブラウザ: {browser}")
+        raise BrowserStartError(f"Selenium では未対応のブラウザです: {browser.value}")
+
+    # ---- DriverProtocol 実装 ----
+
+    def navigate(self, url: str) -> None:
+        self._driver.get(url)
+
+    def do_click(self, selector: str, timeout: float) -> None:
+        by, sel = _resolve_by(selector)
+        WebDriverWait(self._driver, timeout).until(
+            EC.element_to_be_clickable((by, sel))
+        ).click()
+
+    def do_fill(self, selector: str, value: str, timeout: float) -> None:
+        by, sel = _resolve_by(selector)
+        element = WebDriverWait(self._driver, timeout).until(
+            EC.visibility_of_element_located((by, sel))
+        )
+        element.clear()
+        element.send_keys(value)
+
+    def do_select(self, selector: str, value: str, timeout: float) -> None:
+        by, sel = _resolve_by(selector)
+        element = WebDriverWait(self._driver, timeout).until(
+            EC.presence_of_element_located((by, sel))
+        )
+        select = SeleniumSelect(element)
+        try:
+            select.select_by_value(value)
+        except Exception:
+            select.select_by_visible_text(value)
+
+    def do_check(self, selector: str, checked: bool, timeout: float) -> None:
+        by, sel = _resolve_by(selector)
+        element = WebDriverWait(self._driver, timeout).until(
+            EC.presence_of_element_located((by, sel))
+        )
+        if element.is_selected() != checked:
+            element.click()
+
+    def get_screenshot_png(self) -> bytes:
+        return self._driver.get_screenshot_as_png()
+
+    def execute_js(self, script: str) -> Any:
+        return self._driver.execute_script(script)
+
+    def get_window_handles(self) -> list[str]:
+        return list(self._driver.window_handles)
+
+    def get_current_window_handle(self) -> str:
+        return self._driver.current_window_handle
+
+    def switch_to_window(self, handle: str) -> None:
+        self._driver.switch_to.window(handle)
+
+    def close_current_window(self) -> None:
+        self._driver.close()
+
+    def wait_for_new_window(self, known_handles: set[str], timeout: float) -> str:
+        try:
+            WebDriverWait(self._driver, timeout).until(
+                lambda d: len(set(d.window_handles) - known_handles) > 0
+            )
+        except TimeoutException:
+            raise TimeoutError(f"新しいウィンドウが {timeout} 秒以内に開きませんでした")
+        new_handles = set(self._driver.window_handles) - known_handles
+        return new_handles.pop()
 
     def quit(self) -> None:
         if self._driver is not None:
@@ -129,14 +200,9 @@ class BrowserManager:
                 pass
             self._driver = None
 
-    def get_driver(self) -> WebDriver:
-        if self._driver is None:
-            raise RuntimeError("ブラウザが起動していません。start()を先に呼び出してください。")
-        return self._driver
-
-    def __enter__(self) -> BrowserManager:
+    def __enter__(self) -> SeleniumDriver:
         self.start()
         return self
 
-    def __exit__(self, *args) -> None:
+    def __exit__(self, *args: Any) -> None:
         self.quit()
