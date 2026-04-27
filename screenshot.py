@@ -5,8 +5,8 @@ import time
 from pathlib import Path
 
 from PIL import Image
-from selenium.webdriver.remote.webdriver import WebDriver
 
+from driver_protocol import DriverProtocol
 from logger import get_logger
 
 
@@ -14,9 +14,9 @@ class ScreenshotError(Exception):
     pass
 
 
-def take_screenshot(driver: WebDriver, output_path: Path, quality: int = 90) -> None:
+def take_screenshot(driver: DriverProtocol, output_path: Path, quality: int = 90) -> None:
     try:
-        png_bytes = driver.get_screenshot_as_png()
+        png_bytes = driver.get_screenshot_png()
         _save_as_jpeg(png_bytes, output_path, quality)
         get_logger().debug(f"スクリーンショット保存: {output_path}")
     except Exception as e:
@@ -24,29 +24,29 @@ def take_screenshot(driver: WebDriver, output_path: Path, quality: int = 90) -> 
 
 
 def take_scroll_screenshot(
-    driver: WebDriver,
+    driver: DriverProtocol,
     output_path: Path,
     scroll_pause: float = 0.3,
     quality: int = 90,
 ) -> None:
     try:
-        total_height = driver.execute_script("return document.body.scrollHeight")
-        viewport_height = driver.execute_script("return window.innerHeight")
+        total_height = driver.execute_js("return document.body.scrollHeight")
+        viewport_height = driver.execute_js("return window.innerHeight")
 
         if total_height <= viewport_height:
             take_screenshot(driver, output_path, quality)
             return
 
-        driver.execute_script("window.scrollTo(0, 0)")
+        driver.execute_js("window.scrollTo(0, 0)")
         time.sleep(scroll_pause)
 
         strips: list[bytes] = []
         scroll_y = 0
 
         while scroll_y < total_height:
-            strips.append(driver.get_screenshot_as_png())
+            strips.append(driver.get_screenshot_png())
             scroll_y += viewport_height
-            driver.execute_script(f"window.scrollTo(0, {scroll_y})")
+            driver.execute_js(f"window.scrollTo(0, {scroll_y})")
             time.sleep(scroll_pause)
 
         image = _stitch_images(strips, total_height, viewport_height)
